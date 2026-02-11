@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Management - Aircraft Defect Detection</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/bootstrap-icons.css">
+    <!-- Liquid Background CSS -->
+    <link rel="stylesheet" href="css/liquid-background.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            z-index: 1000;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            margin: 5px 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .brand-section {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .brand-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .brand-subtitle {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: #1e3a8a;
+            background-color: #f8fafc;
+        }
+
+        .upload-zone.dragover {
+            border-color: #1e3a8a;
+            background-color: #eff6ff;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .model-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-deployed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-training {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-archived {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                min-height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand-section">
+            <h1 class="brand-title">Admin Panel</h1>
+            <p class="brand-subtitle">Aircraft Defect Detection</p>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="admin-dashboard.html">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a class="nav-link" href="admin-users.html">
+                <i class="bi bi-people"></i> Users
+            </a>
+            <a class="nav-link active" href="admin-models.html">
+                <i class="bi bi-cpu"></i> Models
+            </a>
+            <a class="nav-link" href="admin-monitoring.html">
+                <i class="bi bi-graph-up"></i> Monitoring
+            </a>
+            <a class="nav-link" href="#" id="logoutBtn">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Model Management</h1>
+            <p class="text-muted">Manage ML models and training datasets</p>
+        </div>
+
+        <!-- Upload Training Dataset -->
+        <div class="content-card">
+            <h5 class="mb-3"><i class="bi bi-cloud-upload"></i> Upload Training Dataset</h5>
+            <div class="upload-zone" id="uploadZone">
+                <i class="bi bi-file-earmark-arrow-up" style="font-size: 3rem; color: #94a3b8;"></i>
+                <p class="mt-3 mb-2"><strong>Drag and drop training files here</strong></p>
+                <p class="text-muted mb-3">or click to browse</p>
+                <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.txt,.yaml" style="display: none;">
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    Select Files
+                </button>
+            </div>
+
+            <div id="fileList" class="mt-3"></div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Training Progress</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar"
+                        role="progressbar" style="width: 0%"></div>
+                </div>
+                <div class="mt-3" id="trainingMetrics"></div>
+            </div>
+
+            <button class="btn btn-success mt-3" id="trainBtn" style="display: none;">
+                <i class="bi bi-play-circle"></i> Start Training
+            </button>
+        </div>
+
+        <!-- Model Version History -->
+        <div class="content-card">
+            <h5 class="mb-3"><i class="bi bi-clock-history"></i> Model Version History</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Type</th>
+                            <th>mAP</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modelsTableBody">
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Model Performance Comparison -->
+        <div class="content-card">
+            <h5 class="mb-3"><i class="bi bi-bar-chart"></i> Model Performance Comparison</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <canvas id="mapChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <canvas id="inferenceTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liquid Background JS -->
+    <script src="js/liquid-background.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/axios.min.js"></script>
+    <!-- Auth Module -->
+    <script src="js/auth.js"></script>
+    <script>
+        // Check authentication
+        if (!Auth.requireAuth(true)) {
+            // Will redirect to login
+        }
+    </script>
+    <script>
+        let selectedFiles = [];
+        let trainingJobId = null;
+        let trainingInterval = null;
+
+        // Check authentication
+        function checkAuth() {
+            const user = Auth.getUser();
+            if (!user) return false;
+            const userRole = user.role;
+
+            if (!token || userRole !== 'admin') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Setup drag and drop
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Handle file selection
+        function handleFiles(files) {
+            selectedFiles = Array.from(files);
+            displayFileList();
+            document.getElementById('trainBtn').style.display = 'inline-block';
+        }
+
+        // Display selected files
+        function displayFileList() {
+            const fileList = document.getElementById('fileList');
+
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+
+            fileList.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>${selectedFiles.length} files selected</strong>
+                    <ul class="mb-0 mt-2">
+                        ${selectedFiles.slice(0, 5).map(f => `<li>${f.name} (${(f.size / 1024).toFixed(1)} KB)</li>`).join('')}
+                        ${selectedFiles.length > 5 ? `<li>... and ${selectedFiles.length - 5} more files</li>` : ''}
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Start training
+        document.getElementById('trainBtn').addEventListener('click', async () => {
+            if (selectedFiles.length === 0) {
+                alert('Please select training files first');
+                return;
+            }
+
+            const formData = new FormData();
+
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            document.getElementById('trainBtn').disabled = true;
+            document.getElementById('progressContainer').style.display = 'block';
+
+            try {
+                const response = await axios.post('/api/admin/models/train', formData, {
+                    headers: {
+                        ...Auth.getAuthHeaders(),
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                trainingJobId = response.data.jobId;
+                alert('Training job started successfully!');
+
+                // Start polling for training status
+                trainingInterval = setInterval(checkTrainingStatus, 3000);
+
+            } catch (error) {
+                console.error('Error starting training:', error);
+                alert(error.response?.data?.error?.message || 'Failed to start training');
+                document.getElementById('trainBtn').disabled = false;
+                document.getElementById('progressContainer').style.display = 'none';
+            }
+        });
+
+        // Check training status
+        async function checkTrainingStatus() {
+            if (!trainingJobId) return;
+
+            try {
+                const response = await axios.get(`/api/admin/models/train/${trainingJobId}`, {
+                    headers: Auth.getAuthHeaders()
+                });
+
+                const data = response.data;
+                const progress = data.progress || 0;
+
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                document.getElementById('progressPercent').textContent = `${progress}%`;
+
+                if (data.metrics) {
+                    document.getElementById('trainingMetrics').innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">Loss:</small> <strong>${data.metrics.loss?.toFixed(4) || 'N/A'}</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">mAP:</small> <strong>${data.metrics.mAP ? (data.metrics.mAP * 100).toFixed(2) + '%' : 'N/A'}</strong>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(trainingInterval);
+                    document.getElementById('trainBtn').disabled = false;
+
+                    if (data.status === 'completed') {
+                        alert('Training completed successfully!');
+                        fetchModels();
+                    } else {
+                        alert('Training failed. Please check the logs.');
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error checking training status:', error);
+                clearInterval(trainingInterval);
+                document.getElementById('trainBtn').disabled = false;
+            }
+        }
+
+        // Fetch models
+        async function fetchModels() {
+            try {
+                const response = await axios.get('/api/admin/models', {
+                    headers: Auth.getAuthHeaders()
+                });
+
+                displayModels(response.data.models);
+                updateCharts(response.data.models);
+
+            } catch (error) {
+                console.error('Error fetching models:', error);
+                document.getElementById('modelsTableBody').innerHTML = `
+                    <tr><td colspan="6" class="text-center text-danger">
+                        Failed to load models. ${error.response?.data?.error?.message || ''}
+                    </td></tr>
+                `;
+            }
+        }
+
+        // Display models in table
+        function displayModels(models) {
+            const tbody = document.getElementById('modelsTableBody');
+
+            if (models.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No models found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = models.map(model => `
+                <tr>
+                    <td><strong>${model.version}</strong></td>
+                    <td>${model.type || 'yolov8'}</td>
+                    <td>${model.metrics?.mAP ? (model.metrics.mAP * 100).toFixed(2) + '%' : 'N/A'}</td>
+                    <td>
+                        <span class="model-status status-${model.status}">
+                            ${model.status.charAt(0).toUpperCase() + model.status.slice(1)}
+                        </span>
+                    </td>
+                    <td>${new Date(model.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        ${model.status !== 'deployed' && model.metrics?.mAP >= 0.95 ? `
+                            <button class="btn btn-sm btn-success" onclick="deployModel('${model.version}')">
+                                <i class="bi bi-rocket"></i> Deploy
+                            </button>
+                        ` : ''}
+                        ${model.status === 'deployed' ? `
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Deploy model
+        async function deployModel(version) {
+            if (!confirm(`Deploy model version ${version}? This will replace the current deployed model.`)) {
+                return;
+            }
+
+            try {
+                await axios.post(`/api/admin/models/${version}/deploy`, {}, {
+                    headers: Auth.getAuthHeaders()
+                });
+
+                alert('Model deployed successfully!');
+                fetchModels();
+
+            } catch (error) {
+                console.error('Error deploying model:', error);
+                alert(error.response?.data?.error?.message || 'Failed to deploy model');
+            }
+        }
+
+        // Update charts
+        function updateCharts(models) {
+            const sortedModels = models.slice().sort((a, b) =>
+                new Date(a.createdAt) - new Date(b.createdAt)
+            ).slice(-5);
+
+            const labels = sortedModels.map(m => m.version);
+            const mapData = sortedModels.map(m => m.metrics?.mAP ? m.metrics.mAP * 100 : 0);
+            const inferenceData = sortedModels.map(m => Math.random() * 5 + 3); // Mock data
+
+            // mAP Chart
+            const mapCtx = document.getElementById('mapChart').getContext('2d');
+            new Chart(mapCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'mAP (%)',
+                        data: mapData,
+                        borderColor: '#1e3a8a',
+                        backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Model Accuracy (mAP)'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // Inference Time Chart
+            const timeCtx = document.getElementById('inferenceTimeChart').getContext('2d');
+            new Chart(timeCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Inference Time (s)',
+                        data: inferenceData,
+                        backgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Inference Time Comparison'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            try {
+                await Auth.logout();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        // Initialize
+        if (checkAuth()) {
+            fetchModels();
+        }
+    </script>
+</body>
+
+</html>

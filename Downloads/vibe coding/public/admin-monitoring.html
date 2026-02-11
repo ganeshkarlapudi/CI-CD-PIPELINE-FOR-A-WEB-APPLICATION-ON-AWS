@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitoring - Aircraft Defect Detection</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/bootstrap-icons.css">
+    <!-- Liquid Background CSS -->
+    <link rel="stylesheet" href="css/liquid-background.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            z-index: 1000;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            margin: 5px 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .brand-section {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .brand-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .brand-subtitle {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .metric-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .metric-box h3 {
+            font-size: 2rem;
+            margin: 10px 0;
+        }
+
+        .metric-box p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .log-entry {
+            padding: 12px;
+            border-left: 4px solid;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #f9fafb;
+        }
+
+        .log-entry.info {
+            border-left-color: #3b82f6;
+        }
+
+        .log-entry.warning {
+            border-left-color: #f59e0b;
+            background-color: #fffbeb;
+        }
+
+        .log-entry.error {
+            border-left-color: #ef4444;
+            background-color: #fef2f2;
+        }
+
+        .log-entry.critical {
+            border-left-color: #dc2626;
+            background-color: #fee2e2;
+        }
+
+        .log-timestamp {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .auto-refresh-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .auto-refresh-badge .spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                min-height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand-section">
+            <h1 class="brand-title">Admin Panel</h1>
+            <p class="brand-subtitle">Aircraft Defect Detection</p>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="admin-dashboard.html">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a class="nav-link" href="admin-users.html">
+                <i class="bi bi-people"></i> Users
+            </a>
+            <a class="nav-link" href="admin-models.html">
+                <i class="bi bi-cpu"></i> Models
+            </a>
+            <a class="nav-link active" href="admin-monitoring.html">
+                <i class="bi bi-graph-up"></i> Monitoring
+            </a>
+            <a class="nav-link" href="#" id="logoutBtn">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">System Monitoring</h1>
+                <p class="text-muted mb-0">Real-time metrics and performance data</p>
+            </div>
+            <div class="auto-refresh-badge">
+                <div class="spinner"></div>
+                <span>Auto-refresh: 10s</span>
+            </div>
+        </div>
+
+        <!-- Real-time Metrics -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="metric-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <i class="bi bi-images" style="font-size: 2rem;"></i>
+                    <h3 id="totalInspections">-</h3>
+                    <p>Total Inspections</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                    <h3 id="avgProcessingTime">-</h3>
+                    <p>Avg Processing Time</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <i class="bi bi-eye" style="font-size: 2rem;"></i>
+                    <h3 id="gptCalls">-</h3>
+                    <p>GPT Vision Calls</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    <i class="bi bi-currency-dollar" style="font-size: 2rem;"></i>
+                    <h3 id="apiCosts">-</h3>
+                    <p>API Costs</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Usage Statistics -->
+        <div class="content-card">
+            <h5 class="mb-3"><i class="bi bi-bar-chart-line"></i> API Usage Statistics</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="chart-container">
+                        <canvas id="apiCallsChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Graphs -->
+        <div class="content-card">
+            <h5 class="mb-3"><i class="bi bi-speedometer"></i> Performance Metrics</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="chart-container">
+                        <canvas id="processingTimeChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="chart-container">
+                        <canvas id="throughputChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Logs -->
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Error Logs</h5>
+                <div>
+                    <select class="form-select form-select-sm d-inline-block w-auto" id="severityFilter">
+                        <option value="">All Severities</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="error">Error</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="logsContainer">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav aria-label="Log pagination" class="mt-3">
+                <ul class="pagination justify-content-center" id="logPagination">
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Liquid Background JS -->
+    <script src="js/liquid-background.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/axios.min.js"></script>
+    <!-- Auth Module -->
+    <script src="js/auth.js"></script>
+    <script>
+        // Check authentication
+        if (!Auth.requireAuth(true)) {
+            // Will redirect to login
+        }
+    </script>
+    <script>
+        let refreshInterval = null;
+        let currentLogPage = 1;
+        let currentSeverity = '';
+        let charts = {};
+
+        // Check authentication
+        function checkAuth() {
+            const user = Auth.getUser();
+            if (!user) return false;
+            const userRole = user.role;
+
+            if (!token || userRole !== 'admin') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Fetch metrics
+        async function fetchMetrics() {
+            try {
+                const response = await axios.get('/api/admin/monitoring/metrics', {
+                    headers: Auth.getAuthHeaders()
+                });
+
+                const data = response.data;
+
+                // Update metric boxes
+                document.getElementById('totalInspections').textContent =
+                    data.totalInspections?.toLocaleString() || '0';
+
+                document.getElementById('avgProcessingTime').textContent =
+                    data.avgProcessingTime ? `${(data.avgProcessingTime / 1000).toFixed(2)}s` : '0s';
+
+                document.getElementById('gptCalls').textContent =
+                    data.apiCalls?.gpt?.toLocaleString() || '0';
+
+                document.getElementById('apiCosts').textContent =
+                    data.apiCalls?.cost ? `$${data.apiCalls.cost.toFixed(2)}` : '$0.00';
+
+                // Update charts
+                updateCharts(data);
+
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        }
+
+        // Fetch logs
+        async function fetchLogs(page = 1) {
+            try {
+                const params = {
+                    page,
+                    limit: 10
+                };
+
+                if (currentSeverity) params.severity = currentSeverity;
+
+                const response = await axios.get('/api/admin/monitoring/logs', {
+                    headers: Auth.getAuthHeaders(),
+                    params
+                });
+
+                displayLogs(response.data.logs);
+                displayLogPagination(response.data.page, response.data.pages);
+                currentLogPage = page;
+
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                document.getElementById('logsContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to load logs. ${error.response?.data?.error?.message || ''}
+                    </div>
+                `;
+            }
+        }
+
+        // Display logs
+        function displayLogs(logs) {
+            const container = document.getElementById('logsContainer');
+
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">No logs found</p>';
+                return;
+            }
+
+            container.innerHTML = logs.map(log => `
+                <div class="log-entry ${log.level}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="badge bg-${getSeverityColor(log.level)} me-2">
+                                ${log.level.toUpperCase()}
+                            </span>
+                            <strong>${log.component || 'System'}</strong>
+                        </div>
+                        <span class="log-timestamp">
+                            ${new Date(log.timestamp).toLocaleString()}
+                        </span>
+                    </div>
+                    <p class="mb-0 mt-2">${log.message}</p>
+                    ${log.details ? `<pre class="mb-0 mt-2" style="font-size: 0.85rem;">${JSON.stringify(log.details, null, 2)}</pre>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Get severity color
+        function getSeverityColor(level) {
+            const colors = {
+                info: 'primary',
+                warning: 'warning',
+                error: 'danger',
+                critical: 'dark'
+            };
+            return colors[level] || 'secondary';
+        }
+
+        // Display log pagination
+        function displayLogPagination(currentPage, totalPages) {
+            const pagination = document.getElementById('logPagination');
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            html += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="fetchLogs(${currentPage - 1}); return false;">Previous</a>
+                </li>
+            `;
+
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                html += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="fetchLogs(${i}); return false;">${i}</a>
+                    </li>
+                `;
+            }
+
+            html += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="fetchLogs(${currentPage + 1}); return false;">Next</a>
+                </li>
+            `;
+
+            pagination.innerHTML = html;
+        }
+
+        // Update charts
+        function updateCharts(data) {
+            // Mock time-series data for demonstration
+            const labels = ['6h ago', '5h ago', '4h ago', '3h ago', '2h ago', '1h ago', 'Now'];
+
+            // API Calls Chart
+            if (charts.apiCalls) charts.apiCalls.destroy();
+            const apiCtx = document.getElementById('apiCallsChart').getContext('2d');
+            charts.apiCalls = new Chart(apiCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'GPT Vision API Calls',
+                        data: [12, 19, 15, 25, 22, 30, data.apiCalls?.gpt || 0],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'API Calls Over Time'
+                        }
+                    }
+                }
+            });
+
+            // Cost Chart
+            if (charts.cost) charts.cost.destroy();
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            charts.cost = new Chart(costCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'API Costs ($)',
+                        data: [0.5, 0.8, 0.6, 1.2, 0.9, 1.5, data.apiCalls?.cost || 0],
+                        backgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'API Costs Over Time'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Processing Time Chart
+            if (charts.processingTime) charts.processingTime.destroy();
+            const timeCtx = document.getElementById('processingTimeChart').getContext('2d');
+            charts.processingTime = new Chart(timeCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Processing Time (s)',
+                        data: [8.5, 7.2, 9.1, 6.8, 7.5, 8.0, (data.avgProcessingTime / 1000) || 0],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Average Processing Time'
+                        }
+                    }
+                }
+            });
+
+            // Throughput Chart
+            if (charts.throughput) charts.throughput.destroy();
+            const throughputCtx = document.getElementById('throughputChart').getContext('2d');
+            charts.throughput = new Chart(throughputCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Inspections/Hour',
+                        data: [45, 52, 48, 60, 55, 58, 50],
+                        backgroundColor: '#8b5cf6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'System Throughput'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Severity filter
+        document.getElementById('severityFilter').addEventListener('change', (e) => {
+            currentSeverity = e.target.value;
+            fetchLogs(1);
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            try {
+                await Auth.logout();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        // Initialize
+        if (checkAuth()) {
+            fetchMetrics();
+            fetchLogs(1);
+
+            // Auto-refresh every 10 seconds
+            refreshInterval = setInterval(() => {
+                fetchMetrics();
+                fetchLogs(currentLogPage);
+            }, 10000);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        });
+    </script>
+</body>
+
+</html>

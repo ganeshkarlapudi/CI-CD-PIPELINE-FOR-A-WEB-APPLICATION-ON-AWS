@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Handler Test - Aircraft Defect Detection</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Liquid Background CSS -->
+  <link rel="stylesheet" href="css/liquid-background.css">
+</head>
+<body>
+  <!-- Liquid Background JS -->
+  <script src="js/liquid-background.js"></script>
+  <div class="container mt-5">
+    <h1 class="mb-4">Frontend Error Handler Test</h1>
+    
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5>Test Error Messages</h5>
+          </div>
+          <div class="card-body">
+            <button class="btn btn-danger mb-2 w-100" onclick="testError()">
+              Show Error Message
+            </button>
+            <button class="btn btn-success mb-2 w-100" onclick="testSuccess()">
+              Show Success Message
+            </button>
+            <button class="btn btn-warning mb-2 w-100" onclick="testWarning()">
+              Show Warning Message
+            </button>
+            <button class="btn btn-info mb-2 w-100" onclick="testInfo()">
+              Show Info Message
+            </button>
+            <button class="btn btn-secondary mb-2 w-100" onclick="testMultiple()">
+              Show Multiple Messages
+            </button>
+            <button class="btn btn-outline-danger mb-2 w-100" onclick="testClear()">
+              Clear All Messages
+            </button>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5>Test API Errors</h5>
+          </div>
+          <div class="card-body">
+            <button class="btn btn-danger mb-2 w-100" onclick="test401Error()">
+              Test 401 Unauthorized
+            </button>
+            <button class="btn btn-danger mb-2 w-100" onclick="test403Error()">
+              Test 403 Forbidden
+            </button>
+            <button class="btn btn-danger mb-2 w-100" onclick="test404Error()">
+              Test 404 Not Found
+            </button>
+            <button class="btn btn-danger mb-2 w-100" onclick="test500Error()">
+              Test 500 Server Error
+            </button>
+            <button class="btn btn-danger mb-2 w-100" onclick="testNetworkError()">
+              Test Network Error
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5>Test Form Validation</h5>
+          </div>
+          <div class="card-body">
+            <form id="testForm">
+              <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username">
+              </div>
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email">
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password">
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Validate Form</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h5>Test Global Error Handlers</h5>
+          </div>
+          <div class="card-body">
+            <button class="btn btn-danger mb-2 w-100" onclick="testUncaughtError()">
+              Trigger Uncaught Error
+            </button>
+            <button class="btn btn-danger mb-2 w-100" onclick="testUnhandledRejection()">
+              Trigger Unhandled Rejection
+            </button>
+            <p class="text-muted small mt-3">
+              These will be caught by global error handlers and logged to the backend.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error container will be created dynamically -->
+  <div id="error-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="/js/errorHandler.js"></script>
+  
+  <script>
+    // Test basic error messages
+    function testError() {
+      errorHandler.showError('This is a test error message!', 'error');
+    }
+
+    function testSuccess() {
+      errorHandler.showSuccess('Operation completed successfully!');
+    }
+
+    function testWarning() {
+      errorHandler.showWarning('This is a warning message!');
+    }
+
+    function testInfo() {
+      errorHandler.showInfo('This is an informational message!');
+    }
+
+    function testMultiple() {
+      errorHandler.showError('First error message', 'error');
+      setTimeout(() => errorHandler.showWarning('Second warning message'), 500);
+      setTimeout(() => errorHandler.showSuccess('Third success message'), 1000);
+    }
+
+    function testClear() {
+      errorHandler.clearErrors();
+    }
+
+    // Test API errors
+    function test401Error() {
+      const error = {
+        response: {
+          status: 401,
+          data: {
+            error: {
+              code: 'AUTH_FAILED',
+              message: 'Authentication failed'
+            }
+          }
+        },
+        config: {
+          url: '/api/test',
+          method: 'GET'
+        }
+      };
+      errorHandler.handleApiError(error);
+    }
+
+    function test403Error() {
+      const error = {
+        response: {
+          status: 403,
+          data: {
+            error: {
+              code: 'FORBIDDEN',
+              message: 'You do not have permission to access this resource'
+            }
+          }
+        },
+        config: {
+          url: '/api/admin/users',
+          method: 'GET'
+        }
+      };
+      errorHandler.handleApiError(error);
+    }
+
+    function test404Error() {
+      const error = {
+        response: {
+          status: 404,
+          data: {
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Resource not found'
+            }
+          }
+        },
+        config: {
+          url: '/api/inspections/123',
+          method: 'GET'
+        }
+      };
+      errorHandler.handleApiError(error);
+    }
+
+    function test500Error() {
+      const error = {
+        response: {
+          status: 500,
+          data: {
+            error: {
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'An internal server error occurred'
+            }
+          }
+        },
+        config: {
+          url: '/api/inspections',
+          method: 'POST'
+        }
+      };
+      errorHandler.handleApiError(error);
+    }
+
+    function testNetworkError() {
+      const error = {
+        request: {},
+        message: 'Network Error',
+        config: {
+          url: '/api/test',
+          method: 'GET'
+        }
+      };
+      errorHandler.handleApiError(error);
+    }
+
+    // Test form validation
+    document.getElementById('testForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const validationRules = {
+        username: {
+          required: true,
+          minLength: 3,
+          maxLength: 30,
+          label: 'Username'
+        },
+        email: {
+          required: true,
+          pattern: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
+          patternMessage: 'Please enter a valid email address',
+          label: 'Email'
+        },
+        password: {
+          required: true,
+          minLength: 8,
+          custom: (value) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(value),
+          customMessage: 'Password must contain uppercase, lowercase, digit, and special character',
+          label: 'Password'
+        }
+      };
+
+      const form = document.getElementById('testForm');
+      if (errorHandler.validateForm(form, validationRules)) {
+        errorHandler.showSuccess('Form validation passed!');
+      }
+    });
+
+    // Test global error handlers
+    function testUncaughtError() {
+      // This will be caught by window.onerror
+      throw new Error('This is a test uncaught error');
+    }
+
+    function testUnhandledRejection() {
+      // This will be caught by window.onunhandledrejection
+      Promise.reject(new Error('This is a test unhandled rejection'));
+    }
+
+    console.log('Error Handler Test Page Loaded');
+    console.log('Try the buttons to test different error scenarios');
+  </script>
+</body>
+</html>

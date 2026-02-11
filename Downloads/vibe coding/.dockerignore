@@ -1,0 +1,64 @@
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+ml-service/__pycache__/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+test-*.js
+ml-service/test_*.py
+
+# Build artifacts
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Kiro specs
+.kiro/
+
+# Docker files (don't copy into containers)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Uploads and temporary files
+uploads/
+temp/
+cache/
+
+# Models (will be mounted as volumes)
+ml-service/models/*.pt

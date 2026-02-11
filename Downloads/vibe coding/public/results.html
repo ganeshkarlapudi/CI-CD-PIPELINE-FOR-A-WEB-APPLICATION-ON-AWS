@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspection Results - Aircraft Defect Detection</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-icons.css" rel="stylesheet">
+    <!-- Liquid Background CSS -->
+    <link rel="stylesheet" href="css/liquid-background.css">
+    <style>
+        body {}
+
+        .sidebar {
+            min-height: 100vh;
+            background-color: #343a40;
+            color: white;
+        }
+
+        .sidebar .nav-link {
+            color: #adb5bd;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            margin: 0.25rem 0;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: #495057;
+            color: white;
+        }
+
+        .main-content {
+            padding: 2rem;
+        }
+
+        #imageContainer {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            background-color: #000;
+        }
+
+        #inspectionImage {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .defect-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .defect-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .defect-badge {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .tooltip-custom {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .color-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+        }
+
+        .processing-spinner {
+            text-align: center;
+            padding: 3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-2 d-md-block sidebar">
+                <div class="position-sticky pt-3">
+                    <h5 class="px-3 mb-3">Aircraft Defect Detection</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="user-dashboard.html">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="upload.html">
+                                <i class="bi bi-cloud-upload"></i> Upload
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="results.html">
+                                <i class="bi bi-file-earmark-check"></i> Results
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="history.html">
+                                <i class="bi bi-clock-history"></i> History
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="logoutBtn">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto main-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Inspection Results</h2>
+                    <div>
+                        <button class="btn btn-outline-primary" id="exportJsonBtn">
+                            <i class="bi bi-file-earmark-code"></i> Export JSON
+                        </button>
+                        <button class="btn btn-primary" id="exportPdfBtn">
+                            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Processing Status -->
+                <div id="processingStatus" class="processing-spinner" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Processing...</span>
+                    </div>
+                    <p class="mt-3">Analyzing image for defects...</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorAlert" class="alert alert-danger" style="display: none;"></div>
+
+                <!-- No Defects Message -->
+                <div id="noDefectsAlert" class="alert alert-info" style="display: none;">
+                    No significant defects were found in this inspection.
+                </div>
+
+                <!-- Results Content -->
+                <div id="resultsContent" style="display: none;">
+                    <div class="row">
+                        <!-- Image Display -->
+                        <div class="col-md-8">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Inspection Image</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="imageContainer">
+                                        <img id="inspectionImage" src="" alt="Inspection Image">
+                                        <canvas id="canvas"></canvas>
+                                    </div>
+                                    <div class="tooltip-custom" id="hoverTooltip"></div>
+                                </div>
+                            </div>
+
+                            <!-- Color Legend -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Defect Class Legend</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="color-legend" id="colorLegend"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Defect List Panel -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Detected Defects</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Filter Controls -->
+                                    <div class="mb-3">
+                                        <label for="confidenceThreshold" class="form-label">
+                                            Confidence Threshold: <span id="thresholdValue">50</span>%
+                                        </label>
+                                        <input type="range" class="form-range" id="confidenceThreshold" min="0"
+                                            max="100" value="50" step="5">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="defectClassFilter" class="form-label">Filter by Class</label>
+                                        <select class="form-select" id="defectClassFilter">
+                                            <option value="all">All Classes</option>
+                                        </select>
+                                    </div>
+
+                                    <hr>
+
+                                    <!-- Defect Summary -->
+                                    <div class="mb-3">
+                                        <h6>Summary</h6>
+                                        <p class="mb-1">Total Defects: <strong id="totalDefects">0</strong></p>
+                                        <p class="mb-1">Visible: <strong id="visibleDefects">0</strong></p>
+                                        <p class="mb-0">Processing Time: <strong id="processingTime">-</strong></p>
+                                    </div>
+
+                                    <hr>
+
+                                    <!-- Defect List -->
+                                    <div id="defectList" style="max-height: 500px; overflow-y: auto;">
+                                        <!-- Defect items will be inserted here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Liquid Background JS -->
+    <script src="js/liquid-background.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/axios.min.js"></script>
+    <!-- Auth Module -->
+    <script src="js/auth.js"></script>
+    <script>
+        // Check authentication
+        if (!Auth.requireAuth()) {
+            // Will redirect to login
+        }
+
+        // Configuration
+        const API_BASE_URL = Auth.API_BASE_URL;
+
+        // Defect class colors (12 classes)
+        const DEFECT_COLORS = {
+            'damaged_rivet': '#FF6B6B',
+            'missing_rivet': '#4ECDC4',
+            'filiform_corrosion': '#45B7D1',
+            'missing_panel': '#FFA07A',
+            'paint_detachment': '#98D8C8',
+            'scratch': '#F7DC6F',
+            'composite_damage': '#BB8FCE',
+            'random_damage': '#85C1E2',
+            'burn_mark': '#F8B739',
+            'scorch_mark': '#EB984E',
+            'metal_fatigue': '#AED6F1',
+            'crack': '#E74C3C'
+        };
+
+        // State
+        let inspectionData = null;
+        let allDefects = [];
+        let filteredDefects = [];
+        let confidenceThreshold = 0.5;
+        let selectedClass = 'all';
+        let pollingInterval = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            checkAuth();
+            setupEventListeners();
+            loadInspectionResults();
+        });
+
+        function checkAuth() {
+            if (!Auth.isAuthenticated()) {
+                Auth.redirectToLogin();
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('confidenceThreshold').addEventListener('input', handleThresholdChange);
+            document.getElementById('defectClassFilter').addEventListener('change', handleClassFilterChange);
+            document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
+            document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
+        }
+
+        function getInspectionIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        async function loadInspectionResults() {
+            const inspectionId = getInspectionIdFromUrl();
+
+            if (!inspectionId) {
+                showError('No inspection ID provided');
+                return;
+            }
+
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/inspections/${inspectionId}/results`,
+                    { headers: Auth.getAuthHeaders() }
+                );
+
+                inspectionData = response.data;
+
+                if (inspectionData.status === 'processing') {
+                    showProcessing();
+                    startPolling(inspectionId);
+                } else if (inspectionData.status === 'completed') {
+                    displayResults();
+                } else if (inspectionData.status === 'failed') {
+                    showError('Inspection analysis failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error loading inspection results:', error);
+                showError(error.response?.data?.error?.message || 'Failed to load inspection results');
+            }
+        }
+
+        function startPolling(inspectionId) {
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await axios.get(
+                        `${API_BASE_URL}/inspections/${inspectionId}/results`,
+                        { headers: Auth.getAuthHeaders() }
+                    );
+
+                    inspectionData = response.data;
+
+                    if (inspectionData.status === 'completed') {
+                        stopPolling();
+                        displayResults();
+                    } else if (inspectionData.status === 'failed') {
+                        stopPolling();
+                        showError('Inspection analysis failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 3000); // Poll every 3 seconds
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        function showProcessing() {
+            document.getElementById('processingStatus').style.display = 'block';
+            document.getElementById('resultsContent').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+            document.getElementById('noDefectsAlert').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('errorAlert').textContent = message;
+            document.getElementById('errorAlert').style.display = 'block';
+            document.getElementById('processingStatus').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'none';
+            document.getElementById('noDefectsAlert').style.display = 'none';
+        }
+
+        function displayResults() {
+            document.getElementById('processingStatus').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+
+            allDefects = inspectionData.defects || [];
+
+            if (allDefects.length === 0 || allDefects.filter(d => d.confidence >= 0.5).length === 0) {
+                document.getElementById('noDefectsAlert').style.display = 'block';
+                document.getElementById('resultsContent').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noDefectsAlert').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'block';
+
+            // Load image and setup canvas
+            loadImage();
+
+            // Populate defect class filter
+            populateClassFilter();
+
+            // Display processing time
+            if (inspectionData.processingTime) {
+                document.getElementById('processingTime').textContent =
+                    `${(inspectionData.processingTime / 1000).toFixed(2)}s`;
+            }
+
+            // Apply initial filters
+            applyFilters();
+        }
+
+        function loadImage() {
+            const img = document.getElementById('inspectionImage');
+            img.src = inspectionData.imageUrl;
+
+            img.onload = function () {
+                const canvas = document.getElementById('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // Setup hover events
+                setupCanvasHover();
+
+                // Draw bounding boxes
+                drawBoundingBoxes();
+            };
+        }
+
+        function populateClassFilter() {
+            const classSet = new Set(allDefects.map(d => d.class));
+            const select = document.getElementById('defectClassFilter');
+
+            // Clear existing options except "All Classes"
+            select.innerHTML = '<option value="all">All Classes</option>';
+
+            classSet.forEach(className => {
+                const option = document.createElement('option');
+                option.value = className;
+                option.textContent = formatClassName(className);
+                select.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            filteredDefects = allDefects.filter(defect => {
+                const meetsThreshold = defect.confidence >= confidenceThreshold;
+                const meetsClass = selectedClass === 'all' || defect.class === selectedClass;
+                return meetsThreshold && meetsClass;
+            });
+
+            updateDefectList();
+            updateSummary();
+            drawBoundingBoxes();
+            updateColorLegend();
+        }
+
+        function updateDefectList() {
+            const listContainer = document.getElementById('defectList');
+            listContainer.innerHTML = '';
+
+            if (filteredDefects.length === 0) {
+                listContainer.innerHTML = '<p class="text-muted">No defects match the current filters.</p>';
+                return;
+            }
+
+            filteredDefects.forEach((defect, index) => {
+                const item = document.createElement('div');
+                item.className = 'defect-item border-bottom py-2';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${formatClassName(defect.class)}</strong>
+                            <br>
+                            <small class="text-muted">
+                                Confidence: ${(defect.confidence * 100).toFixed(1)}%
+                            </small>
+                            ${defect.source ? `<br><small class="text-muted">Source: ${defect.source}</small>` : ''}
+                        </div>
+                        <span class="defect-badge badge" style="background-color: ${DEFECT_COLORS[defect.class] || '#6c757d'}">
+                            #${index + 1}
+                        </span>
+                    </div>
+                `;
+
+                item.addEventListener('click', () => highlightDefect(defect));
+                listContainer.appendChild(item);
+            });
+        }
+
+        function updateSummary() {
+            document.getElementById('totalDefects').textContent = allDefects.length;
+            document.getElementById('visibleDefects').textContent = filteredDefects.length;
+        }
+
+        function updateColorLegend() {
+            const legendContainer = document.getElementById('colorLegend');
+            legendContainer.innerHTML = '';
+
+            const visibleClasses = new Set(filteredDefects.map(d => d.class));
+
+            visibleClasses.forEach(className => {
+                const item = document.createElement('div');
+                item.className = 'color-legend-item';
+                item.innerHTML = `
+                    <div class="color-box" style="background-color: ${DEFECT_COLORS[className] || '#6c757d'}"></div>
+                    <span>${formatClassName(className)}</span>
+                `;
+                legendContainer.appendChild(item);
+            });
+        }
+
+        function drawBoundingBoxes() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = document.getElementById('inspectionImage');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate scale factors
+            const scaleX = img.width / img.naturalWidth;
+            const scaleY = img.height / img.naturalHeight;
+
+            filteredDefects.forEach((defect, index) => {
+                const bbox = defect.bbox;
+                const color = DEFECT_COLORS[defect.class] || '#6c757d';
+
+                // Scale bounding box coordinates
+                const x = bbox.x * scaleX;
+                const y = bbox.y * scaleY;
+                const width = bbox.width * scaleX;
+                const height = bbox.height * scaleY;
+
+                // Draw bounding box
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, width, height);
+
+                // Draw label background
+                const label = `${formatClassName(defect.class)} ${(defect.confidence * 100).toFixed(0)}%`;
+                ctx.font = '14px Arial';
+                const textWidth = ctx.measureText(label).width;
+                const textHeight = 20;
+
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y - textHeight, textWidth + 10, textHeight);
+
+                // Draw label text
+                ctx.fillStyle = 'white';
+                ctx.fillText(label, x + 5, y - 5);
+            });
+        }
+
+        function setupCanvasHover() {
+            const canvas = document.getElementById('canvas');
+            const tooltip = document.getElementById('hoverTooltip');
+            const img = document.getElementById('inspectionImage');
+
+            canvas.style.pointerEvents = 'auto';
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const scaleX = img.naturalWidth / img.width;
+                const scaleY = img.naturalHeight / img.height;
+
+                const actualX = x * scaleX;
+                const actualY = y * scaleY;
+
+                // Find defect under cursor
+                const hoveredDefect = filteredDefects.find(defect => {
+                    const bbox = defect.bbox;
+                    return actualX >= bbox.x && actualX <= bbox.x + bbox.width &&
+                        actualY >= bbox.y && actualY <= bbox.y + bbox.height;
+                });
+
+                if (hoveredDefect) {
+                    tooltip.innerHTML = `
+                        <strong>${formatClassName(hoveredDefect.class)}</strong><br>
+                        Confidence: ${(hoveredDefect.confidence * 100).toFixed(1)}%<br>
+                        Location: (${Math.round(hoveredDefect.bbox.x)}, ${Math.round(hoveredDefect.bbox.y)})<br>
+                        Size: ${Math.round(hoveredDefect.bbox.width)} × ${Math.round(hoveredDefect.bbox.height)}px
+                        ${hoveredDefect.source ? `<br>Source: ${hoveredDefect.source}` : ''}
+                    `;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.clientX + 10) + 'px';
+                    tooltip.style.top = (e.clientY + 10) + 'px';
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        }
+
+        function highlightDefect(defect) {
+            // Flash the bounding box
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = document.getElementById('inspectionImage');
+
+            const scaleX = img.width / img.naturalWidth;
+            const scaleY = img.height / img.naturalHeight;
+
+            const x = defect.bbox.x * scaleX;
+            const y = defect.bbox.y * scaleY;
+            const width = defect.bbox.width * scaleX;
+            const height = defect.bbox.height * scaleY;
+
+            // Redraw all boxes
+            drawBoundingBoxes();
+
+            // Highlight selected box
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(x, y, width, height);
+
+            // Reset after 1 second
+            setTimeout(() => {
+                drawBoundingBoxes();
+            }, 1000);
+        }
+
+        function handleThresholdChange(e) {
+            confidenceThreshold = e.target.value / 100;
+            document.getElementById('thresholdValue').textContent = e.target.value;
+            applyFilters();
+        }
+
+        function handleClassFilterChange(e) {
+            selectedClass = e.target.value;
+            applyFilters();
+        }
+
+        function formatClassName(className) {
+            return className.split('_').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        async function exportJSON() {
+            const exportData = {
+                inspectionId: inspectionData._id,
+                timestamp: inspectionData.createdAt,
+                imageUrl: inspectionData.imageUrl,
+                status: inspectionData.status,
+                processingTime: inspectionData.processingTime,
+                modelVersion: inspectionData.modelVersion,
+                defects: inspectionData.defects,
+                summary: {
+                    totalDefects: allDefects.length,
+                    defectsByClass: getDefectsByClass()
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inspection_${inspectionData._id}_report.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function exportPDF() {
+            const inspectionId = getInspectionIdFromUrl();
+
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/inspections/${inspectionId}/report?format=pdf`,
+                    {
+                        headers: Auth.getAuthHeaders(),
+                        responseType: 'blob'
+                    }
+                );
+
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `inspection_${inspectionId}_report.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error exporting PDF:', error);
+                alert('PDF export is not yet implemented on the backend. Please use JSON export.');
+            }
+        }
+
+        function getDefectsByClass() {
+            const summary = {};
+            allDefects.forEach(defect => {
+                if (!summary[defect.class]) {
+                    summary[defect.class] = 0;
+                }
+                summary[defect.class]++;
+            });
+            return summary;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopPolling();
+        });
+    </script>
+</body>
+
+</html>

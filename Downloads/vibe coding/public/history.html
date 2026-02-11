@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspection History - Aircraft Defect Detection</title>
+
+    <!-- Bootstrap 5 CSS (Local) -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons (Local) -->
+    <link rel="stylesheet" href="css/bootstrap-icons.css">
+    <!-- Liquid Background CSS -->
+    <link rel="stylesheet" href="css/liquid-background.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 0;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h4 {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 5px 0 0;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-left: 4px solid white;
+        }
+
+        .nav-link i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .top-bar h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .table-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .chart-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .inspection-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .inspection-row:hover {
+            background-color: #f8f9fa;
+        }
+
+        .comparison-checkbox {
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-airplane"></i> Aircraft Defect</h4>
+            <p id="userNameDisplay">Loading...</p>
+        </div>
+        <nav>
+            <a href="user-dashboard.html" class="nav-link">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="upload.html" class="nav-link">
+                <i class="bi bi-cloud-upload"></i>
+                <span>Upload</span>
+            </a>
+            <a href="results.html" class="nav-link">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Results</span>
+            </a>
+            <a href="history.html" class="nav-link active">
+                <i class="bi bi-clock-history"></i>
+                <span>History</span>
+            </a>
+            <a href="#" class="nav-link" onclick="logout(); return false;">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <h2><i class="bi bi-clock-history"></i> Inspection History</h2>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h5 class="mb-3">Search & Filter</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="searchInput" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search by ID...">
+                </div>
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="startDate">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="endDate">
+                </div>
+                <div class="col-md-3">
+                    <label for="defectClassFilter" class="form-label">Defect Class</label>
+                    <select class="form-select" id="defectClassFilter">
+                        <option value="">All Classes</option>
+                        <option value="damaged_rivet">Damaged Rivet</option>
+                        <option value="missing_rivet">Missing Rivet</option>
+                        <option value="filiform_corrosion">Filiform Corrosion</option>
+                        <option value="missing_panel">Missing Panel</option>
+                        <option value="paint_detachment">Paint Detachment</option>
+                        <option value="scratch">Scratch</option>
+                        <option value="composite_damage">Composite Damage</option>
+                        <option value="random_damage">Random Damage</option>
+                        <option value="burn_mark">Burn Mark</option>
+                        <option value="scorch_mark">Scorch Mark</option>
+                        <option value="metal_fatigue">Metal Fatigue</option>
+                        <option value="crack">Crack</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="bi bi-funnel"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </button>
+                    <button class="btn btn-outline-info float-end" onclick="toggleComparisonMode()" id="comparisonBtn">
+                        <i class="bi bi-layout-split"></i> Enable Comparison
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison View (Hidden by default) -->
+        <div class="filter-section" id="comparisonView" style="display: none;">
+            <h5 class="mb-3">Comparison View</h5>
+            <div id="comparisonContent" class="row">
+                <p class="text-muted">Select inspections from the table below to compare</p>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="clearComparison()">
+                <i class="bi bi-x"></i> Clear Comparison
+            </button>
+        </div>
+
+        <!-- Inspection Records Table -->
+        <div class="table-section">
+            <h5 class="mb-3">Inspection Records</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th id="comparisonHeader" style="display: none;">
+                                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                            </th>
+                            <th style="cursor: pointer;" onclick="sortBy('date')">
+                                Date <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th>Inspection ID</th>
+                            <th>Status</th>
+                            <th>Defects Found</th>
+                            <th>Processing Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inspectionTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Inspection pagination">
+                <ul class="pagination justify-content-center" id="pagination">
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Trend Visualization Charts -->
+        <div class="chart-section">
+            <h5 class="mb-3">Trend Analysis</h5>
+
+            <!-- Date Range Selector for Trends -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <label for="trendStartDate" class="form-label">Trend Start Date</label>
+                    <input type="date" class="form-control" id="trendStartDate">
+                </div>
+                <div class="col-md-3">
+                    <label for="trendEndDate" class="form-label">Trend End Date</label>
+                    <input type="date" class="form-control" id="trendEndDate">
+                </div>
+                <div class="col-md-3">
+                    <label for="trendGroupBy" class="form-label">Group By</label>
+                    <select class="form-select" id="trendGroupBy">
+                        <option value="day">Daily</option>
+                        <option value="week">Weekly</option>
+                        <option value="month">Monthly</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-primary w-100" onclick="updateTrendAnalysis()">
+                        <i class="bi bi-graph-up"></i> Update Trends
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h6>Defects Over Time</h6>
+                    <canvas id="defectsOverTimeChart"></canvas>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6>Defects by Class</h6>
+                    <canvas id="defectsByClassChart"></canvas>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <h6>Inspection Frequency</h6>
+                    <canvas id="inspectionFrequencyChart"></canvas>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <h6>Defect Class Trends</h6>
+                    <canvas id="defectClassTrendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liquid Background JS -->
+    <script src="js/liquid-background.js"></script>
+    <!-- Axios (Local) -->
+    <script src="js/axios.min.js"></script>
+    <!-- Auth Module -->
+    <script src="js/auth.js"></script>
+    <!-- Bootstrap 5 JS (Local) -->
+    <script src="js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // API Base URL
+        const API_BASE_URL = Auth.API_BASE_URL;
+
+        // State
+        let allInspections = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let sortOrder = 'desc';
+        let comparisonMode = false;
+        let selectedInspections = [];
+
+        // Charts
+        let defectsOverTimeChart = null;
+        let defectsByClassChart = null;
+        let inspectionFrequencyChart = null;
+        let defectClassTrendsChart = null;
+
+        // Trend data
+        let trendData = null;
+
+        // Check authentication
+        window.addEventListener('DOMContentLoaded', function () {
+            const user = Auth.requireAuth();
+            if (!user) return;
+
+            // Display user info
+            if (user.username) {
+                document.getElementById('userNameDisplay').textContent = user.username;
+            }
+
+            // Load inspection history
+            loadInspections();
+
+            // Load trend analysis
+            loadTrendAnalysis();
+
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            document.getElementById('trendEndDate').valueAsDate = today;
+            document.getElementById('trendStartDate').valueAsDate = thirtyDaysAgo;
+        });
+
+        // Load inspections from API
+        async function loadInspections(page = 1) {
+            currentPage = page;
+
+            try {
+                // Build query parameters
+                const params = {
+                    page: currentPage,
+                    limit: 10
+                };
+
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                const defectClass = document.getElementById('defectClassFilter').value;
+
+                if (startDate) params.startDate = startDate;
+                if (endDate) params.endDate = endDate;
+                if (defectClass) params.defectClass = defectClass;
+
+                const response = await axios.get(`${API_BASE_URL}/inspections`, {
+                    headers: Auth.getAuthHeaders(),
+                    params: params
+                });
+
+                if (response.data.success) {
+                    allInspections = response.data.inspections || [];
+                    totalPages = response.data.pages || 1;
+
+                    displayInspections();
+                    updatePagination();
+                    updateCharts();
+                } else {
+                    showEmptyState('No inspections found');
+                }
+            } catch (error) {
+                console.error('Error loading inspections:', error);
+
+                if (error.response && error.response.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                } else {
+                    showEmptyState('Error loading inspections');
+                }
+            }
+        }
+
+        // Display inspections in table
+        function displayInspections() {
+            const tbody = document.getElementById('inspectionTableBody');
+
+            if (!allInspections || allInspections.length === 0) {
+                showEmptyState('No inspections found');
+                return;
+            }
+
+            tbody.innerHTML = '';
+
+            allInspections.forEach(inspection => {
+                const row = document.createElement('tr');
+                row.className = 'inspection-row';
+
+                const date = new Date(inspection.createdAt).toLocaleString();
+                const statusBadge = getStatusBadge(inspection.status);
+                const defectCount = inspection.defects ? inspection.defects.length : 0;
+                const processingTime = inspection.processingTime
+                    ? `${(inspection.processingTime / 1000).toFixed(2)}s`
+                    : 'N/A';
+
+                let checkboxCell = '';
+                if (comparisonMode) {
+                    const isChecked = selectedInspections.includes(inspection._id);
+                    checkboxCell = `
+                        <td>
+                            <input type="checkbox" class="comparison-checkbox" 
+                                   ${isChecked ? 'checked' : ''}
+                                   onchange="toggleInspectionSelection('${inspection._id}')">
+                        </td>
+                    `;
+                }
+
+                row.innerHTML = `
+                    ${checkboxCell}
+                    <td>${date}</td>
+                    <td><code>${inspection._id.substring(0, 12)}...</code></td>
+                    <td>${statusBadge}</td>
+                    <td><span class="badge bg-warning">${defectCount}</span></td>
+                    <td>${processingTime}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewInspection('${inspection._id}')">
+                            <i class="bi bi-eye"></i> View
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // Get status badge HTML
+        function getStatusBadge(status) {
+            const badges = {
+                'uploaded': '<span class="badge bg-secondary">Uploaded</span>',
+                'processing': '<span class="badge bg-warning">Processing</span>',
+                'completed': '<span class="badge bg-success">Completed</span>',
+                'failed': '<span class="badge bg-danger">Failed</span>'
+            };
+            return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+        }
+
+        // Show empty state
+        function showEmptyState(message) {
+            const tbody = document.getElementById('inspectionTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>${message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Update pagination
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadInspections(${currentPage - 1}); return false;">Previous</a>`;
+            pagination.appendChild(prevLi);
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" onclick="loadInspections(${i}); return false;">${i}</a>`;
+                    pagination.appendChild(li);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = `<span class="page-link">...</span>`;
+                    pagination.appendChild(li);
+                }
+            }
+
+            // Next button
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadInspections(${currentPage + 1}); return false;">Next</a>`;
+            pagination.appendChild(nextLi);
+        }
+
+        // Sort by date
+        function sortBy(field) {
+            if (field === 'date') {
+                sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+                allInspections.sort((a, b) => {
+                    const dateA = new Date(a.createdAt);
+                    const dateB = new Date(b.createdAt);
+                    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+                });
+                displayInspections();
+            }
+        }
+
+        // Apply filters
+        function applyFilters() {
+            loadInspections(1);
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('defectClassFilter').value = '';
+            loadInspections(1);
+        }
+
+        // View inspection details
+        function viewInspection(inspectionId) {
+            window.location.href = `results.html?id=${inspectionId}`;
+        }
+
+        // Toggle comparison mode
+        function toggleComparisonMode() {
+            comparisonMode = !comparisonMode;
+            const btn = document.getElementById('comparisonBtn');
+            const header = document.getElementById('comparisonHeader');
+            const view = document.getElementById('comparisonView');
+
+            if (comparisonMode) {
+                btn.innerHTML = '<i class="bi bi-layout-split"></i> Disable Comparison';
+                btn.classList.remove('btn-outline-info');
+                btn.classList.add('btn-info', 'text-white');
+                header.style.display = 'table-cell';
+                view.style.display = 'block';
+            } else {
+                btn.innerHTML = '<i class="bi bi-layout-split"></i> Enable Comparison';
+                btn.classList.remove('btn-info', 'text-white');
+                btn.classList.add('btn-outline-info');
+                header.style.display = 'none';
+                view.style.display = 'none';
+                selectedInspections = [];
+            }
+
+            displayInspections();
+        }
+
+        // Toggle inspection selection for comparison
+        function toggleInspectionSelection(inspectionId) {
+            const index = selectedInspections.indexOf(inspectionId);
+
+            if (index > -1) {
+                selectedInspections.splice(index, 1);
+            } else {
+                if (selectedInspections.length >= 4) {
+                    alert('You can compare up to 4 inspections at a time');
+                    return;
+                }
+                selectedInspections.push(inspectionId);
+            }
+
+            updateComparisonView();
+        }
+
+        // Toggle select all
+        function toggleSelectAll() {
+            const checkbox = document.getElementById('selectAllCheckbox');
+
+            if (checkbox.checked) {
+                selectedInspections = allInspections.slice(0, 4).map(i => i._id);
+            } else {
+                selectedInspections = [];
+            }
+
+            displayInspections();
+            updateComparisonView();
+        }
+
+        // Update comparison view
+        async function updateComparisonView() {
+            const content = document.getElementById('comparisonContent');
+
+            if (selectedInspections.length === 0) {
+                content.innerHTML = '<p class="text-muted">Select inspections from the table below to compare</p>';
+                return;
+            }
+
+            content.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+
+            try {
+                // Fetch full details for selected inspections
+                const inspectionDetails = await Promise.all(
+                    selectedInspections.map(id =>
+                        axios.get(`${API_BASE_URL}/inspections/${id}`, {
+                            headers: Auth.getAuthHeaders()
+                        })
+                    )
+                );
+
+                content.innerHTML = '';
+
+                inspectionDetails.forEach(response => {
+                    if (!response.data.success) return;
+
+                    const inspection = response.data.data;
+                    const col = document.createElement('div');
+                    col.className = 'col-md-3 mb-3';
+
+                    const defectCount = inspection.defects ? inspection.defects.length : 0;
+                    const date = new Date(inspection.createdAt).toLocaleDateString();
+                    const time = new Date(inspection.createdAt).toLocaleTimeString();
+                    const processingTime = inspection.processingTime
+                        ? `${(inspection.processingTime / 1000).toFixed(2)}s`
+                        : 'N/A';
+
+                    // Group defects by class
+                    const defectsByClass = {};
+                    if (inspection.defects && Array.isArray(inspection.defects)) {
+                        inspection.defects.forEach(defect => {
+                            const className = formatClassName(defect.class);
+                            if (!defectsByClass[className]) {
+                                defectsByClass[className] = 0;
+                            }
+                            defectsByClass[className]++;
+                        });
+                    }
+
+                    // Build defect breakdown HTML
+                    let defectBreakdown = '';
+                    Object.keys(defectsByClass).sort().forEach(className => {
+                        defectBreakdown += `<small>${className}: ${defectsByClass[className]}</small><br>`;
+                    });
+
+                    if (defectBreakdown === '') {
+                        defectBreakdown = '<small class="text-muted">No defects</small>';
+                    }
+
+                    col.innerHTML = `
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-calendar-check"></i> ${date}
+                                </h6>
+                                <p class="card-text">
+                                    <small class="text-muted">${time}</small><br>
+                                    ${getStatusBadge(inspection.status)}<br>
+                                    <strong class="text-primary">${defectCount}</strong> total defects<br>
+                                    <small class="text-muted">Processing: ${processingTime}</small>
+                                </p>
+                                <hr>
+                                <div class="mb-2">
+                                    <strong>Defect Breakdown:</strong><br>
+                                    ${defectBreakdown}
+                                </div>
+                                <button class="btn btn-sm btn-primary w-100 mt-2" onclick="viewInspection('${inspection._id}')">
+                                    <i class="bi bi-eye"></i> View Details
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    content.appendChild(col);
+                });
+
+                // Add comparison chart if we have multiple inspections
+                if (inspectionDetails.length > 1) {
+                    const chartCol = document.createElement('div');
+                    chartCol.className = 'col-md-12 mt-3';
+                    chartCol.innerHTML = `
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>Comparison Chart</h6>
+                                <canvas id="comparisonChart"></canvas>
+                            </div>
+                        </div>
+                    `;
+                    content.appendChild(chartCol);
+
+                    // Create comparison chart
+                    setTimeout(() => createComparisonChart(inspectionDetails), 100);
+                }
+
+            } catch (error) {
+                console.error('Error loading comparison details:', error);
+                content.innerHTML = '<p class="text-danger">Error loading comparison details</p>';
+            }
+        }
+
+        // Create comparison chart
+        function createComparisonChart(inspectionDetails) {
+            const ctx = document.getElementById('comparisonChart');
+            if (!ctx) return;
+
+            // Extract all unique defect classes
+            const allClasses = new Set();
+            inspectionDetails.forEach(response => {
+                const inspection = response.data.data;
+                if (inspection.defects && Array.isArray(inspection.defects)) {
+                    inspection.defects.forEach(defect => {
+                        allClasses.add(formatClassName(defect.class));
+                    });
+                }
+            });
+
+            const classArray = Array.from(allClasses).sort();
+
+            // Create datasets for each inspection
+            const datasets = inspectionDetails.map((response, index) => {
+                const inspection = response.data.data;
+                const date = new Date(inspection.createdAt).toLocaleDateString();
+
+                // Count defects by class for this inspection
+                const defectCounts = {};
+                classArray.forEach(className => {
+                    defectCounts[className] = 0;
+                });
+
+                if (inspection.defects && Array.isArray(inspection.defects)) {
+                    inspection.defects.forEach(defect => {
+                        const className = formatClassName(defect.class);
+                        if (defectCounts[className] !== undefined) {
+                            defectCounts[className]++;
+                        }
+                    });
+                }
+
+                const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe'];
+
+                return {
+                    label: `Inspection ${date}`,
+                    data: classArray.map(className => defectCounts[className]),
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 1
+                };
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: classArray,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Clear comparison
+        function clearComparison() {
+            selectedInspections = [];
+            displayInspections();
+            updateComparisonView();
+        }
+
+        // Update charts
+        function updateCharts() {
+            updateDefectsOverTimeChart();
+            updateDefectsByClassChart();
+            updateInspectionFrequencyChart();
+        }
+
+        // Load trend analysis data
+        async function loadTrendAnalysis() {
+            try {
+                const startDate = document.getElementById('trendStartDate').value;
+                const endDate = document.getElementById('trendEndDate').value;
+                const groupBy = document.getElementById('trendGroupBy').value;
+
+                const params = {};
+                if (startDate) params.startDate = startDate;
+                if (endDate) params.endDate = endDate;
+                params.groupBy = groupBy;
+
+                // Fetch trend data
+                const [trendsResponse, summaryResponse] = await Promise.all([
+                    axios.get(`${API_BASE_URL}/inspections/trends/defects`, {
+                        headers: Auth.getAuthHeaders(),
+                        params: params
+                    }),
+                    axios.get(`${API_BASE_URL}/inspections/trends/summary`, {
+                        headers: Auth.getAuthHeaders(),
+                        params: params
+                    })
+                ]);
+
+                if (trendsResponse.data.success && summaryResponse.data.success) {
+                    trendData = {
+                        trends: trendsResponse.data.data.trends,
+                        summary: summaryResponse.data.data
+                    };
+
+                    updateTrendCharts();
+                }
+            } catch (error) {
+                console.error('Error loading trend analysis:', error);
+            }
+        }
+
+        // Update trend analysis
+        function updateTrendAnalysis() {
+            loadTrendAnalysis();
+        }
+
+        // Update trend charts
+        function updateTrendCharts() {
+            if (!trendData) return;
+
+            updateDefectClassTrendsChart();
+            updateDefectsByClassSummaryChart();
+            updateInspectionFrequencySummaryChart();
+        }
+
+        // Update defects over time chart
+        function updateDefectsOverTimeChart() {
+            const ctx = document.getElementById('defectsOverTimeChart');
+
+            // Prepare data
+            const dateMap = {};
+            allInspections.forEach(inspection => {
+                const date = new Date(inspection.createdAt).toLocaleDateString();
+                const defectCount = inspection.defects ? inspection.defects.length : 0;
+
+                if (!dateMap[date]) {
+                    dateMap[date] = 0;
+                }
+                dateMap[date] += defectCount;
+            });
+
+            const labels = Object.keys(dateMap).sort((a, b) => new Date(a) - new Date(b));
+            const data = labels.map(label => dateMap[label]);
+
+            if (defectsOverTimeChart) {
+                defectsOverTimeChart.destroy();
+            }
+
+            defectsOverTimeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Defects Found',
+                        data: data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update defects by class chart (from current page data)
+        function updateDefectsByClassChart() {
+            const ctx = document.getElementById('defectsByClassChart');
+
+            // Prepare data
+            const classMap = {};
+            allInspections.forEach(inspection => {
+                if (inspection.defects && Array.isArray(inspection.defects)) {
+                    inspection.defects.forEach(defect => {
+                        const className = formatClassName(defect.class);
+                        if (!classMap[className]) {
+                            classMap[className] = 0;
+                        }
+                        classMap[className]++;
+                    });
+                }
+            });
+
+            const labels = Object.keys(classMap);
+            const data = Object.values(classMap);
+
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+                '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+                '#F8B739', '#EB984E', '#AED6F1', '#E74C3C'
+            ];
+
+            if (defectsByClassChart) {
+                defectsByClassChart.destroy();
+            }
+
+            defectsByClassChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update inspection frequency chart
+        function updateInspectionFrequencyChart() {
+            const ctx = document.getElementById('inspectionFrequencyChart');
+
+            // Prepare data
+            const dateMap = {};
+            allInspections.forEach(inspection => {
+                const date = new Date(inspection.createdAt).toLocaleDateString();
+
+                if (!dateMap[date]) {
+                    dateMap[date] = 0;
+                }
+                dateMap[date]++;
+            });
+
+            const labels = Object.keys(dateMap).sort((a, b) => new Date(a) - new Date(b));
+            const data = labels.map(label => dateMap[label]);
+
+            if (inspectionFrequencyChart) {
+                inspectionFrequencyChart.destroy();
+            }
+
+            inspectionFrequencyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Inspections',
+                        data: data,
+                        backgroundColor: '#764ba2',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update defects by class summary chart (from trend data)
+        function updateDefectsByClassSummaryChart() {
+            if (!trendData || !trendData.summary) return;
+
+            const ctx = document.getElementById('defectsByClassChart');
+            const defectsByClass = trendData.summary.defectsByClass;
+
+            if (!defectsByClass || defectsByClass.length === 0) return;
+
+            const labels = defectsByClass.map(d => formatClassName(d.class));
+            const data = defectsByClass.map(d => d.count);
+
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+                '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+                '#F8B739', '#EB984E', '#AED6F1', '#E74C3C'
+            ];
+
+            if (defectsByClassChart) {
+                defectsByClassChart.destroy();
+            }
+
+            defectsByClassChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    const avgConf = defectsByClass[context.dataIndex].avgConfidence;
+                                    return [
+                                        `${label}: ${value} (${percentage}%)`,
+                                        `Avg Confidence: ${(avgConf * 100).toFixed(1)}%`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update inspection frequency summary chart (from trend data)
+        function updateInspectionFrequencySummaryChart() {
+            if (!trendData || !trendData.summary) return;
+
+            const ctx = document.getElementById('inspectionFrequencyChart');
+            const frequency = trendData.summary.inspectionFrequency;
+
+            if (!frequency || frequency.length === 0) return;
+
+            const labels = frequency.map(f => f.date);
+            const data = frequency.map(f => f.count);
+
+            if (inspectionFrequencyChart) {
+                inspectionFrequencyChart.destroy();
+            }
+
+            inspectionFrequencyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Inspections',
+                        data: data,
+                        backgroundColor: '#764ba2',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update defect class trends chart (multi-line chart showing each class over time)
+        function updateDefectClassTrendsChart() {
+            if (!trendData || !trendData.trends) return;
+
+            const ctx = document.getElementById('defectClassTrendsChart');
+            const trends = trendData.trends;
+
+            if (!trends || trends.length === 0) return;
+
+            // Extract all unique defect classes
+            const allClasses = new Set();
+            trends.forEach(trend => {
+                trend.defectsByClass.forEach(d => allClasses.add(d.class));
+            });
+
+            const classArray = Array.from(allClasses);
+            const labels = trends.map(t => t.date);
+
+            // Create dataset for each defect class
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+                '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+                '#F8B739', '#EB984E', '#AED6F1', '#E74C3C'
+            ];
+
+            const datasets = classArray.map((className, index) => {
+                const data = trends.map(trend => {
+                    const defect = trend.defectsByClass.find(d => d.class === className);
+                    return defect ? defect.count : 0;
+                });
+
+                return {
+                    label: formatClassName(className),
+                    data: data,
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length] + '20',
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                };
+            });
+
+            if (defectClassTrendsChart) {
+                defectClassTrendsChart.destroy();
+            }
+
+            defectClassTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // Format class name
+        function formatClassName(className) {
+            return className.split('_').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await Auth.logout();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+
+            // Clear local storage
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+
+            // Redirect to login
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+
+</html>

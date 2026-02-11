@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Test</title>
+    <!-- Liquid Background CSS -->
+    <link rel="stylesheet" href="public/css/liquid-background.css">
+</head>
+<body>
+    <!-- Liquid Background JS -->
+    <script src="public/js/liquid-background.js"></script>
+    <h1>Testing Backend Connection</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testBackend() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Test health endpoint
+                const healthResponse = await fetch('http://localhost:3000/health');
+                const healthData = await healthResponse.json();
+                resultDiv.innerHTML += `<p>✅ Health Check: ${JSON.stringify(healthData)}</p>`;
+                
+                // Test register endpoint
+                const registerResponse = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'testuser',
+                        email: 'test@example.com',
+                        password: 'Test123!@#',
+                        confirmPassword: 'Test123!@#'
+                    })
+                });
+                
+                const registerData = await registerResponse.json();
+                resultDiv.innerHTML += `<p>Register Response: ${JSON.stringify(registerData)}</p>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        }
+        
+        testBackend();
+    </script>
+</body>
+</html>

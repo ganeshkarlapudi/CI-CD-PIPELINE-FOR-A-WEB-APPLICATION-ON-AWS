@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aircraft Defect Detection System</title>
+
+    <!-- Dark Theme CSS -->
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <!-- Bootstrap Icons (Local) -->
+    <link rel="stylesheet" href="css/bootstrap-icons.css">
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Background Video Styling */
+        .video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -3;
+        }
+
+        /* Dark overlay for better text readability */
+        .video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.85) 0%, rgba(21, 25, 50, 0.85) 100%);
+            z-index: -2;
+        }
+
+        /* Grid overlay on top of video */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+        }
+
+        .landing-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-md);
+        }
+
+        .welcome-container {
+            text-align: center;
+            max-width: 800px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .logo-section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .logo-section i {
+            font-size: 5rem;
+            color: var(--accent-blue);
+            margin-bottom: var(--spacing-md);
+            display: block;
+            animation: pulse 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px var(--accent-glow));
+        }
+
+        .logo-section h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin: 0 0 var(--spacing-md) 0;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+        }
+
+        .logo-section p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-buttons .btn {
+            min-width: 180px;
+            font-size: 1.125rem;
+            padding: 1rem 2rem;
+        }
+
+        .btn-primary-landing {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, #3a7bc8 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-primary-landing:hover {
+            background: linear-gradient(135deg, var(--accent-blue-hover) 0%, #4a8bd8 100%);
+            box-shadow: 0 6px 30px var(--accent-glow);
+            transform: translateY(-3px);
+        }
+
+        .btn-secondary-landing {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary-landing:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
+        }
+
+        .features {
+            margin-top: var(--spacing-xl);
+            display: flex;
+            gap: var(--spacing-lg);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .feature-item i {
+            color: var(--accent-blue);
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .logo-section h1 {
+                font-size: 2.5rem;
+            }
+
+            .logo-section p {
+                font-size: 1rem;
+            }
+
+            .logo-section i {
+                font-size: 3.5rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .cta-buttons .btn {
+                width: 100%;
+            }
+
+            .features {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Video -->
+    <video autoplay muted loop playsinline class="video-background">
+        <source src="landing-video.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Dark overlay for better text visibility -->
+    <div class="video-overlay"></div>
+
+    <!-- Grid overlay -->
+    <div class="grid-overlay"></div>
+
+    <div class="landing-page">
+        <div class="welcome-container">
+            <div class="logo-section">
+                <i class="bi bi-airplane"></i>
+                <h1>Aircraft Defect Detection System</h1>
+                <p>Automated aircraft visual inspection using AI and machine learning</p>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="login.html" class="btn btn-primary-landing">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Login
+                </a>
+                <a href="register.html" class="btn btn-secondary-landing">
+                    <i class="bi bi-person-plus"></i>
+                    Register
+                </a>
+            </div>
+
+            <div class="features">
+                <div class="feature-item">
+                    <i class="bi bi-shield-check"></i>
+                    <span>AI-Powered Detection</span>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-lightning-charge"></i>
+                    <span>Real-time Analysis</span>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-graph-up"></i>
+                    <span>High Accuracy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

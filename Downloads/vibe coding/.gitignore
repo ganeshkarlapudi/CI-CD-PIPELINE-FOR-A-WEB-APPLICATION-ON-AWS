@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+
+# Keep example and template files
+!.env.example
+!.env.development
+!.env.production
+!.env.docker
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+
+# Build files
+dist/
+build/
+
+# Uploads
+uploads/
+temp/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv
+
+# ML models
+*.pt
+*.pth
+models/weights/
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Backups
+backups/
+*.tar.gz
+*.sql
+*.dump
+
+
+.cursor/rules/kluster-code-verify.mdc
+.kluster

@@ -1,0 +1,51 @@
+{
+  "name": "aircraft-defect-detection",
+  "version": "1.0.0",
+  "description": "Aircraft defect detection system using YOLOv8 and GPT Vision API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --coverage",
+    "test:unit": "jest --testPathIgnorePatterns=integration.test.js --coverage",
+    "test:integration": "jest __tests__/integration.test.js --runInBand --detectOpenHandles"
+  },
+  "keywords": [
+    "aircraft",
+    "defect-detection",
+    "yolov8",
+    "machine-learning"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.931.0",
+    "@aws-sdk/lib-storage": "^3.931.0",
+    "axios": "^1.6.5",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.12",
+    "pdfkit": "^0.14.0",
+    "redis": "^4.6.12",
+    "sharp": "^0.34.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jsdom": "^27.2.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
+  }
+}

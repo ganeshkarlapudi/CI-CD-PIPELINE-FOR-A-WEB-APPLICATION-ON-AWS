@@ -1,0 +1,46 @@
+# Development override for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./src:/app/src:ro
+      - ./package.json:/app/package.json:ro
+      - backend_logs:/app/logs
+      - backend_uploads:/app/uploads
+    command: npm run dev
+
+  ml-service:
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+    volumes:
+      - ./ml-service:/app:ro
+      - ml_models:/app/models
+      - ml_cache:/app/cache
+      - backend_uploads:/app/uploads:ro
+    command: flask run --host=0.0.0.0 --port=5000 --reload
+
+  frontend:
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  mongodb:
+    ports:
+      - "27017:27017"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+volumes:
+  backend_logs:
+  backend_uploads:
+  ml_models:
+  ml_cache:

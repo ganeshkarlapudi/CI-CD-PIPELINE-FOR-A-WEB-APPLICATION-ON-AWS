@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Aircraft Defect Detection System</title>
+
+    <!-- Dark Theme CSS -->
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <!-- Bootstrap Icons (Local) -->
+    <link rel="stylesheet" href="css/bootstrap-icons.css">
+
+    <style>
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-md);
+        }
+
+        .login-card {
+            max-width: 450px;
+            width: 100%;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .logo i {
+            font-size: 3rem;
+            color: var(--accent-blue);
+            margin-bottom: var(--spacing-sm);
+            display: block;
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 var(--spacing-xs) 0;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, #5ba3f5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .social-login {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .social-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 0.875rem;
+        }
+
+        .social-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--border-color-hover);
+            transform: translateY(-2px);
+        }
+
+        .social-btn i {
+            font-size: 1.25rem;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            transition: color var(--transition-fast);
+        }
+
+        .password-toggle:hover {
+            color: var(--text-primary);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper .form-input {
+            padding-right: 3rem;
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            font-size: 0.875rem;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 1.125rem;
+            height: 1.125rem;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper label {
+            color: var(--text-secondary);
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .alert {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-md);
+            border: 1px solid;
+            animation: slideInLeft 0.3s ease-out;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .alert-info {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated Grid Background -->
+    <div class="dark-grid-background"></div>
+
+    <div class="login-page">
+        <div class="login-card glass-card">
+            <!-- Logo -->
+            <div class="logo">
+                <i class="bi bi-airplane"></i>
+                <h1>Aircraft Defect Detection</h1>
+                <p>Sign in to access your dashboard</p>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Login Form -->
+            <form id="loginForm" novalidate>
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="username" class="form-label">Email</label>
+                    <input type="text" class="form-input" id="username" name="username" placeholder="Your email address"
+                        required autocomplete="username">
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-input" id="password" name="password"
+                            placeholder="Your password" required autocomplete="current-password">
+                        <button type="button" class="password-toggle" id="togglePassword">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="remember-forgot">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="rememberMe">
+                        <label for="rememberMe">Remember me</label>
+                    </div>
+                    <a href="forgot-password.html">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                    <span id="submitText">Continue</span>
+                    <span id="submitSpinner" class="spinner" style="display: none; width: 20px; height: 20px;"></span>
+                </button>
+            </form>
+
+            <!-- Register Link -->
+            <div class="text-center mt-lg">
+                <span class="text-secondary">Don't have an account? </span>
+                <a href="register.html">Sign up</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Axios (Local) -->
+    <script src="js/axios.min.js"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        // Form elements
+        const form = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const rememberMeCheckbox = document.getElementById('rememberMe');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        const submitSpinner = document.getElementById('submitSpinner');
+        const alertContainer = document.getElementById('alertContainer');
+
+        // Check if user is already logged in
+        window.addEventListener('DOMContentLoaded', async function () {
+            if (Auth.isAuthenticated()) {
+                const user = await Auth.verifyToken();
+                if (user) {
+                    Auth.redirectToDashboard(user.role);
+                    return;
+                }
+            }
+
+            // Load remembered username
+            const rememberedUsername = localStorage.getItem('rememberedUsername');
+            if (rememberedUsername) {
+                usernameInput.value = rememberedUsername;
+                rememberMeCheckbox.checked = true;
+            }
+
+            // Check for URL message
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            if (message) {
+                showAlert(message, 'info');
+            }
+        });
+
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            this.querySelector('i').classList.toggle('bi-eye');
+            this.querySelector('i').classList.toggle('bi-eye-slash');
+        });
+
+        // Validation
+        function validateUsername() {
+            const username = usernameInput.value.trim();
+            if (username.length === 0) {
+                setInvalid(usernameInput, 'Email is required');
+                return false;
+            }
+            clearValidation(usernameInput);
+            return true;
+        }
+
+        function validatePassword() {
+            const password = passwordInput.value;
+            if (password.length === 0) {
+                setInvalid(passwordInput, 'Password is required');
+                return false;
+            }
+            clearValidation(passwordInput);
+            return true;
+        }
+
+        function setInvalid(input, message) {
+            input.style.borderColor = 'var(--accent-red)';
+            const feedback = input.parentElement.nextElementSibling || input.nextElementSibling;
+            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                feedback.textContent = message;
+                feedback.style.display = 'block';
+                feedback.style.color = 'var(--accent-red)';
+                feedback.style.fontSize = '0.875rem';
+                feedback.style.marginTop = '0.25rem';
+            }
+        }
+
+        function clearValidation(input) {
+            input.style.borderColor = '';
+            const feedback = input.parentElement.nextElementSibling || input.nextElementSibling;
+            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                feedback.style.display = 'none';
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type = 'danger') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Form submission
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const isUsernameValid = validateUsername();
+            const isPasswordValid = validatePassword();
+
+            if (!isUsernameValid || !isPasswordValid) {
+                showAlert('Please fill in all required fields', 'warning');
+                return;
+            }
+
+            // Disable button
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            submitSpinner.style.display = 'block';
+
+            try {
+                const result = await Auth.login(
+                    usernameInput.value.trim(),
+                    passwordInput.value
+                );
+
+                if (result.success) {
+                    if (rememberMeCheckbox.checked) {
+                        localStorage.setItem('rememberedUsername', usernameInput.value.trim());
+                    } else {
+                        localStorage.removeItem('rememberedUsername');
+                    }
+
+                    showAlert('Login successful! Redirecting...', 'success');
+
+                    setTimeout(() => {
+                        Auth.redirectToDashboard(result.user.role);
+                    }, 1000);
+                } else {
+                    showAlert(result.message, 'danger');
+                    submitBtn.disabled = false;
+                    submitText.style.display = 'block';
+                    submitSpinner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('An unexpected error occurred. Please try again.', 'danger');
+
+                submitBtn.disabled = false;
+                submitText.style.display = 'block';
+                submitSpinner.style.display = 'none';
+            }
+        });
+
+        // Real-time validation
+        usernameInput.addEventListener('input', function () {
+            if (this.style.borderColor) {
+                validateUsername();
+            }
+        });
+
+        passwordInput.addEventListener('input', function () {
+            if (this.style.borderColor) {
+                validatePassword();
+            }
+        });
+    </script>
+</body>
+
+</html>
